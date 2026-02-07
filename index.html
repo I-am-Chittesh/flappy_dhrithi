@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Face</title>
+    <title>Flappy VIT</title>
     <style>
         body {
             margin: 0;
@@ -15,28 +15,40 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            touch-action: none; /* Prevent scrolling on mobile */
+            touch-action: none; 
         }
 
         canvas {
             display: block;
             border: 2px solid #333;
             box-shadow: 0 0 20px rgba(0,0,0,0.2);
-            background-color: #70c5ce;
+            background-color: #70c5ce; 
         }
 
-        #startScreen, #gameOverScreen {
+        #startScreen, #gameOverScreen, #countdownScreen {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             padding: 20px 40px;
             border-radius: 15px;
             border: 4px solid #333;
             box-shadow: 5px 5px 0px #333;
             z-index: 10;
+        }
+
+        /* Countdown is transparent */
+        #countdownScreen {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            font-size: 80px;
+            font-weight: 900;
+            color: white;
+            -webkit-text-stroke: 3px #333;
+            display: none;
         }
 
         h1 {
@@ -68,6 +80,7 @@
 
         #crashImage {
             max-width: 200px;
+            max-height: 200px;
             margin-bottom: 20px;
             border: 3px solid red;
             border-radius: 10px;
@@ -77,15 +90,18 @@
 <body>
 
     <div id="startScreen">
-        <h1>Flappy Friend</h1>
+        <h1>Flappy Dhrithi</h1>
         <p>Tap, Click, or Spacebar to Fly</p>
-        <button onclick="startGame()">PLAY NOW</button>
+        <button onclick="triggerCountdown()">PLAY NOW</button>
     </div>
+
+    <div id="countdownScreen">3</div>
 
     <div id="gameOverScreen">
         <h1>WASTED</h1>
         <img id="crashImage" src="" alt="Crash Face"> 
         <br>
+        <h2 id="finalScore">Score: 0</h2>
         <button onclick="resetGame()">TRY AGAIN</button>
     </div>
 
@@ -93,9 +109,8 @@
 
     <script>
         // --- CONFIGURATION ---
-        // REPLACE THESE URLS WITH YOUR ACTUAL IMAGE LINKS
-        const birdImageSrc = 'https://i.imgur.com/Q50TjC6.png'; // Small face for the bird
-        const crashImageSrc = 'https://i.imgur.com/Q50TjC6.png'; // Funny face for game over
+        const birdImageSrc = 'face.png';   
+        const crashImageSrc = 'crash.png'; 
         
         // Setup Canvas
         const canvas = document.getElementById('gameCanvas');
@@ -109,7 +124,6 @@
         const birdImg = new Image();
         birdImg.src = birdImageSrc;
         
-        // Set crash image
         document.getElementById('crashImage').src = crashImageSrc;
 
         // Game Variables
@@ -118,31 +132,55 @@
         let gameRunning = false;
         let obstacles = [];
         
+        // PHYSICS SETTINGS (Smoother)
         const bird = {
             x: 50,
             y: 150,
-            w: 40, // Width of the face
-            h: 40, // Height of the face
+            w: 40, 
+            h: 40, 
             speed: 0,
-            gravity: 0.25,
-            jump: 4.6
+            gravity: 0.15,
+            jump: 3.5 
         };
 
         // Controls
         document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' && gameRunning) moveUp();
+            if (e.code === 'Space') {
+                if (gameRunning) moveUp();
+                else if (document.getElementById('gameOverScreen').style.display === 'block') resetGame();
+            }
         });
-        canvas.addEventListener('click', () => {
-            if (gameRunning) moveUp();
+        
+        canvas.addEventListener('pointerdown', (e) => {
+             if (gameRunning) moveUp();
         });
 
         function moveUp() {
             bird.speed = -bird.jump;
         }
 
-        function startGame() {
+        function triggerCountdown() {
             document.getElementById('startScreen').style.display = 'none';
             document.getElementById('gameOverScreen').style.display = 'none';
+            const countDiv = document.getElementById('countdownScreen');
+            
+            countDiv.style.display = 'block';
+            let count = 3;
+            countDiv.innerText = count;
+
+            let timer = setInterval(() => {
+                count--;
+                if(count > 0) {
+                    countDiv.innerText = count;
+                } else {
+                    clearInterval(timer);
+                    countDiv.style.display = 'none';
+                    startGame();
+                }
+            }, 800); 
+        }
+
+        function startGame() {
             resetVariables();
             gameRunning = true;
             loop();
@@ -157,16 +195,16 @@
         }
 
         function resetGame() {
-            startGame();
+            triggerCountdown();
         }
 
         function gameOver() {
             gameRunning = false;
+            document.getElementById('finalScore').innerText = "Score: " + score;
             document.getElementById('gameOverScreen').style.display = 'block';
         }
 
         function drawBird() {
-            // Draw the friend's face
             ctx.drawImage(birdImg, bird.x, bird.y, bird.w, bird.h);
         }
 
@@ -174,18 +212,20 @@
             bird.speed += bird.gravity;
             bird.y += bird.speed;
 
-            // Floor collision
             if (bird.y + bird.h >= canvas.height) {
                 gameOver();
+            }
+            if (bird.y < 0) {
+                bird.y = 0;
+                bird.speed = 0;
             }
         }
 
         const pipeWidth = 50;
-        const pipeGap = 120; // How much space between pipes
+        const pipeGap = 130; 
         
         function updatePipes() {
-            if (frames % 100 === 0) {
-                // Generate random pipe height
+            if (frames % 120 === 0) { 
                 let topPipeHeight = Math.floor(Math.random() * (canvas.height - pipeGap - 50)) + 20;
                 obstacles.push({
                     x: canvas.width,
@@ -196,18 +236,33 @@
 
             for (let i = 0; i < obstacles.length; i++) {
                 let p = obstacles[i];
-                p.x -= 2; // Pipe speed
+                p.x -= 2; 
 
-                // Draw Pipes (Green)
+                // 1. Draw Green Pipe Background
                 ctx.fillStyle = '#2ecc71';
-                ctx.fillRect(p.x, 0, pipeWidth, p.topH); // Top Pipe
-                ctx.fillRect(p.x, p.bottomY, pipeWidth, canvas.height - p.bottomY); // Bottom Pipe
+                ctx.fillRect(p.x, 0, pipeWidth, p.topH); // Top
+                ctx.fillRect(p.x, p.bottomY, pipeWidth, canvas.height - p.bottomY); // Bottom
                 
-                // Border for pipes
+                // 2. Draw Borders
                 ctx.strokeStyle = '#333';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(p.x, 0, pipeWidth, p.topH);
                 ctx.strokeRect(p.x, p.bottomY, pipeWidth, canvas.height - p.bottomY);
+
+                // 3. DRAW "VIT" TEXT REPEATEDLY
+                ctx.fillStyle = "#FFF"; // White text
+                ctx.font = "bold 18px Arial";
+                ctx.textAlign = "center";
+                
+                // Loop for Top Pipe
+                for (let j = 20; j < p.topH; j += 30) {
+                    ctx.fillText("VIT", p.x + pipeWidth/2, j);
+                }
+
+                // Loop for Bottom Pipe
+                for (let j = p.bottomY + 30; j < canvas.height; j += 30) {
+                    ctx.fillText("VIT", p.x + pipeWidth/2, j);
+                }
 
                 // Collision Detection
                 if (
@@ -218,7 +273,6 @@
                     gameOver();
                 }
 
-                // Remove off-screen pipes
                 if (p.x + pipeWidth < 0) {
                     obstacles.shift();
                     score++;
@@ -228,9 +282,12 @@
 
         function drawScore() {
             ctx.fillStyle = "#FFF";
-            ctx.font = "30px Arial";
-            ctx.fillText(score, canvas.width/2 - 10, 50);
-            ctx.strokeText(score, canvas.width/2 - 10, 50);
+            ctx.font = "40px Arial";
+            ctx.textAlign = "start"; // Reset alignment for score
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 4;
+            ctx.strokeText(score, canvas.width/2 - 10, 60);
+            ctx.fillText(score, canvas.width/2 - 10, 60);
         }
 
         function loop() {
@@ -249,7 +306,6 @@
             requestAnimationFrame(loop);
         }
 
-        // Initial Draw
         ctx.fillStyle = "#70c5ce";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     </script>

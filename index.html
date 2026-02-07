@@ -132,7 +132,7 @@
         let gameRunning = false;
         let obstacles = [];
         
-        // PHYSICS SETTINGS (Smoother)
+        // PHYSICS SETTINGS
         const bird = {
             x: 50,
             y: 150,
@@ -142,6 +142,9 @@
             gravity: 0.15,
             jump: 3.5 
         };
+
+        // HITBOX REDUCTION (20% smaller)
+        const hitboxPadding = bird.w * 0.2; // 20% of width
 
         // Controls
         document.addEventListener('keydown', (e) => {
@@ -206,6 +209,9 @@
 
         function drawBird() {
             ctx.drawImage(birdImg, bird.x, bird.y, bird.w, bird.h);
+            
+            // UNCOMMENT LINE BELOW TO SEE THE DEBUG BOX (The actual hitbox)
+            // ctx.strokeRect(bird.x + hitboxPadding/2, bird.y + hitboxPadding/2, bird.w - hitboxPadding, bird.h - hitboxPadding);
         }
 
         function updateBird() {
@@ -221,11 +227,13 @@
             }
         }
 
+        // --- PIPE SETTINGS ---
         const pipeWidth = 50;
-        const pipeGap = 130; 
+        const pipeGap = 140; 
         
         function updatePipes() {
-            if (frames % 120 === 0) { 
+            // WIDE HORIZONTAL SPACING (Every 240 frames)
+            if (frames % 150 === 0) { 
                 let topPipeHeight = Math.floor(Math.random() * (canvas.height - pipeGap - 50)) + 20;
                 obstacles.push({
                     x: canvas.width,
@@ -240,8 +248,8 @@
 
                 // 1. Draw Green Pipe Background
                 ctx.fillStyle = '#2ecc71';
-                ctx.fillRect(p.x, 0, pipeWidth, p.topH); // Top
-                ctx.fillRect(p.x, p.bottomY, pipeWidth, canvas.height - p.bottomY); // Bottom
+                ctx.fillRect(p.x, 0, pipeWidth, p.topH); 
+                ctx.fillRect(p.x, p.bottomY, pipeWidth, canvas.height - p.bottomY); 
                 
                 // 2. Draw Borders
                 ctx.strokeStyle = '#333';
@@ -250,7 +258,7 @@
                 ctx.strokeRect(p.x, p.bottomY, pipeWidth, canvas.height - p.bottomY);
 
                 // 3. DRAW "VIT" TEXT REPEATEDLY
-                ctx.fillStyle = "#FFF"; // White text
+                ctx.fillStyle = "#FFF"; 
                 ctx.font = "bold 18px Arial";
                 ctx.textAlign = "center";
                 
@@ -264,11 +272,17 @@
                     ctx.fillText("VIT", p.x + pipeWidth/2, j);
                 }
 
-                // Collision Detection
+                // --- UPDATED COLLISION LOGIC (Hitbox Reduced) ---
+                // We define the "active" hitbox coordinates
+                let birdLeft = bird.x + hitboxPadding/2;
+                let birdRight = bird.x + bird.w - hitboxPadding/2;
+                let birdTop = bird.y + hitboxPadding/2;
+                let birdBottom = bird.y + bird.h - hitboxPadding/2;
+
                 if (
-                    bird.x < p.x + pipeWidth &&
-                    bird.x + bird.w > p.x &&
-                    (bird.y < p.topH || bird.y + bird.h > p.bottomY)
+                    birdRight > p.x &&             // Bird Right > Pipe Left
+                    birdLeft < p.x + pipeWidth &&  // Bird Left < Pipe Right
+                    (birdTop < p.topH || birdBottom > p.bottomY) // Vertical Hit
                 ) {
                     gameOver();
                 }
@@ -283,7 +297,7 @@
         function drawScore() {
             ctx.fillStyle = "#FFF";
             ctx.font = "40px Arial";
-            ctx.textAlign = "start"; // Reset alignment for score
+            ctx.textAlign = "start"; 
             ctx.strokeStyle = "#000";
             ctx.lineWidth = 4;
             ctx.strokeText(score, canvas.width/2 - 10, 60);
